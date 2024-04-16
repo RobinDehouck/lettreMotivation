@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LinkedIn Profile Data</title>
+    <script src="https://cdn.auth0.com/js/auth0/9.13/auth0.min.js"></script>
+</head>
+<body>
+    <h1>Login to View LinkedIn Profile Data</h1>
+    <button onclick="login()">Log In with LinkedIn</button>
+    <h2>Profile Summary and Experience</h2>
+    <div id="profileData">Log in to view data.</div>
+
+    <script>
+        var webAuth = new auth0.WebAuth({
+            domain: 'dev-22qqeuiwrgz4oybu.us.auth0.com',
+            clientID: 'StqbqoSlQOBOWkgoQ5rzQZRK7bkmhxFz',
+            redirectUri: 'https://www.youtube.com/watch?v=RzkD_rTEBYs',
+            audience: 'https://api.linkedin.com/v2/',
+            responseType: 'token id_token',
+            scope: 'r_liteprofile r_emailaddress'
+        });
+
+        function login() {
+            webAuth.authorize({
+                connection: 'linkedin'
+            });
+        }
+
+        function handleAuthentication() {
+            webAuth.parseHash((err, authResult) => {
+                if (authResult && authResult.accessToken && authResult.idToken) {
+                    window.location.hash = '';
+                    showProfile(authResult.accessToken);
+                } else if (err) {
+                    console.log('Error:', err);
+                    alert('Error: ' + err.error);
+                }
+            });
+        }
+
+        function showProfile(token) {
+            const url = 'https://api.linkedin.com/v2/me';
+            fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('profileData').innerHTML = `
+                    <p><strong>Summary:</strong> ${data.summary}</p>
+                    <p><strong>Experience:</strong> ${data.experience}</p>
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching LinkedIn data:', error);
+            });
+        }
+
+        window.onload = handleAuthentication;
+    </script>
+</body>
+</html>
