@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Scraping de Texte Dynamique</title>
+    <title>Création de Lettre de Motivation</title>
     <style>
         body {
             display: flex;
@@ -20,11 +20,13 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             border-radius: 10px;
         }
-        input[type="text"], button {
+        textarea, button {
+            width: 80%;
             padding: 10px;
             margin-top: 20px;
             border: 2px solid #007BFF;
             border-radius: 5px;
+            resize: none;
         }
         button {
             background-color: #007BFF;
@@ -34,47 +36,43 @@
         button:hover {
             background-color: #0056b3;
         }
-        #displayUrl {
-            margin-top: 20px;
-            color: #333;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Entrez une URL</h1>
-        <input type="text" id="urlInput" placeholder="Collez votre URL ici">
-        <button onclick="fetchAndDisplayText()">Scrape Text</button>
-        <div id="displayText"></div>
+        <h1>Entrez vos informations</h1>
+        
+        <textarea id="summaryInput" placeholder="Entrez votre résumé ici"></textarea>
+        <textarea id="experienceInput" placeholder="Entrez votre expérience ici"></textarea>
+        <textarea id="jobOfferInput" placeholder="Entrez votre offre d'emploi ici"></textarea>
+        <button onclick="submitData()">Soumettre</button>
+        <div id="resultText"></div>
     </div>
 
-	<script>
-		function fetchAndDisplayText() {
-			var url = document.getElementById('urlInput').value;
-			var proxyUrl = 'https://latf-proxy.herokuapp.com/';
-			fetch(proxyUrl + url)
-				.then(response => response.text())
-				.then(html => {
-					var parser = new DOMParser();
-					var doc = parser.parseFromString(html, "text/html");
-	
-					// Extracting sections with data-section="summary" and "experience"
-					var summary = doc.querySelector('[data-section="summary"]');
-					var experience = doc.querySelector('[data-section="experience"]');
-	
-					var summaryText = summary ? summary.textContent.trim() : "No summary available.";
-					var experienceText = experience ? experience.textContent.trim() : "No experience details available.";
-	
-					document.getElementById('displayText').innerHTML = 
-						`<strong>Summary:</strong> ${summaryText}<br><br>` +
-						`<strong>Experience:</strong> ${experienceText}`;
-				})
-				.catch(error => {
-					console.error('Error fetching the data:', error);
-					document.getElementById('displayText').innerText = "Failed to fetch data. Check the URL and try again.";
-				});
-		}
-	</script>
-	
+    <script>
+        document.getElementById('summaryInput').value = localStorage.getItem('summary') || '';
+        document.getElementById('experienceInput').value = localStorage.getItem('experience') || '';
+
+        function submitData() {
+            const summary = document.getElementById('summaryInput').value;
+            const experience = document.getElementById('experienceInput').value;
+            const jobOffer = document.getElementById('jobOfferInput').value;
+
+            localStorage.setItem('summary', summary);
+            localStorage.setItem('experience', experience);
+
+            fetch('https://planbee-userguide-5570514a4a23.herokuapp.com/lettremotivation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({summary, experience, jobOffer})
+            }).then(response => response.json())
+              .then(data => {
+                  document.getElementById('resultText').innerHTML = `<strong>Résultat:</strong> ${data.result}`;
+              })
+              .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
 </html>
