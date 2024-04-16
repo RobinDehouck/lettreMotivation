@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Création de Lettre de Motivation</title>
+    <title>Cover Letter Generator</title>
     <style>
         body {
             display: flex;
@@ -40,39 +40,69 @@
 </head>
 <body>
     <div class="container">
-        <h1>Entrez vos informations</h1>
-        
-        <textarea id="summaryInput" placeholder="Entrez votre résumé ici"></textarea>
-        <textarea id="experienceInput" placeholder="Entrez votre expérience ici"></textarea>
-        <textarea id="jobOfferInput" placeholder="Entrez votre offre d'emploi ici"></textarea>
-        <button onclick="submitData()">Soumettre</button>
-        <div id="resultText"></div>
+        <h1>Insert your LinkedIn informations</h1>
+        <h3>Robin Dehouck - Cover Letter Generator</h3>
+        <textarea id="summaryInput" placeholder="Enter your profile's summary"></textarea>
+        <textarea id="experienceInput" placeholder="Enter your experiences"></textarea>
+        <textarea id="jobOfferInput" placeholder="Enter the job offer"></textarea>
+        <button onclick="submitData()">Submit</button>
+        <div id="resultText">Fill all the fields and click on submit</div>
     </div>
-
     <script>
-        document.getElementById('summaryInput').value = localStorage.getItem('summary') || '';
-        document.getElementById('experienceInput').value = localStorage.getItem('experience') || '';
+            const summaryInput = document.getElementById('summaryInput');
+            const experienceInput = document.getElementById('experienceInput');
+            const jobOfferInput = document.getElementById('jobOfferInput');
+            const resultText = document.getElementById('resultText');
 
-        function submitData() {
-            const summary = document.getElementById('summaryInput').value;
-            const experience = document.getElementById('experienceInput').value;
-            const jobOffer = document.getElementById('jobOfferInput').value;
+            summaryInput.value = localStorage.getItem('summary') || '';
+            experienceInput.value = localStorage.getItem('experience') || '';
 
-            localStorage.setItem('summary', summary);
-            localStorage.setItem('experience', experience);
+            function submitData() {
+                const summary = summaryInput.value;
+                const experience = experienceInput.value;
+                const jobOffer = jobOfferInput.value;
 
-            fetch('https://planbee-userguide-5570514a4a23.herokuapp.com/lettremotivation', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({summary, experience, jobOffer})
-            }).then(response => response.json())
-              .then(data => {
-                  document.getElementById('resultText').innerHTML = `<strong>Résultat:</strong> ${data.result}`;
-              })
-              .catch(error => console.error('Error:', error));
-        }
+                localStorage.setItem('summary', summary);
+                localStorage.setItem('experience', experience);
+
+                resultText.innerHTML = 'Writing your cover letter...';
+
+                fetch('https://planbee-userguide-5570514a4a23.herokuapp.com/lettremotivation', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({summary, experience, jobOffer})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.task_id) {
+                        checkStatus(data.task_id);
+                    } else {
+                        throw new Error('Aucun identifiant de tâche reçu, impossible de suivre le progrès.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    resultText.innerHTML = 'Erreur : ' + error.message;
+                });
+            }
+
+            function checkStatus(taskId) {
+                fetch(`https://planbee-userguide-5570514a4a23.herokuapp.com/status/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'completed') {
+                        resultText.innerHTML = `<strong>Résultat :</strong> ${data.result}`;
+                    } else if (data.status === 'processing') {
+                        setTimeout(() => checkStatus(taskId), 5000); // Check every 5 seconds
+                    } else {
+                        throw new Error(data.error || 'Échec du traitement de la demande.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    resultText.innerHTML = 'Erreur : ' + error.message;
+                });
+            }
     </script>
 </body>
 </html>
